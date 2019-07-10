@@ -656,7 +656,7 @@ func (p *MediaPlaylist) Encode() *bytes.Buffer {
 		}
 		if !seg.ProgramDateTime.IsZero() {
 			p.buf.WriteString("#EXT-X-PROGRAM-DATE-TIME:")
-			p.buf.WriteString(seg.ProgramDateTime.Format(DATETIME))
+			p.buf.WriteString(seg.ProgramDateTime.Format(PROGRAMM_DATETIME))
 			p.buf.WriteRune('\n')
 		}
 		if seg.DateRange != nil {
@@ -664,7 +664,7 @@ func (p *MediaPlaylist) Encode() *bytes.Buffer {
 			p.buf.WriteString("ID=\"")
 			p.buf.WriteString(seg.DateRange.ID)
 			p.buf.WriteString("\",START-DATE=\"")
-			p.buf.WriteString(seg.DateRange.StartDate.Format(DATETIME))
+			p.buf.WriteString(seg.DateRange.StartDate.Format(DATERANGE_DATETIME))
 			p.buf.WriteString("\"")
 
 			if seg.DateRange.Class != "" {
@@ -685,7 +685,7 @@ func (p *MediaPlaylist) Encode() *bytes.Buffer {
 
 			if !seg.DateRange.EndDate.IsZero() {
 				p.buf.WriteString(",END-DATE=\"")
-				p.buf.WriteString(seg.DateRange.EndDate.Format(DATETIME))
+				p.buf.WriteString(seg.DateRange.EndDate.Format(DATERANGE_DATETIME))
 				p.buf.WriteString("\"")
 			}
 
