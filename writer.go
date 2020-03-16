@@ -163,8 +163,9 @@ func (p *MasterPlaylist) Encode() *bytes.Buffer {
 			if pl.ProgramId != nil {
 				p.buf.WriteString("PROGRAM-ID=")
 				p.buf.WriteString(strconv.FormatUint(uint64(*pl.ProgramId), 10))
+				p.buf.WriteString(",")
 			}
-			p.buf.WriteString(",BANDWIDTH=")
+			p.buf.WriteString("BANDWIDTH=")
 			p.buf.WriteString(strconv.FormatUint(uint64(pl.Bandwidth), 10))
 			if pl.AverageBandwidth != 0 {
 				p.buf.WriteString(",AVERAGE-BANDWIDTH=")
@@ -203,8 +204,9 @@ func (p *MasterPlaylist) Encode() *bytes.Buffer {
 			if pl.ProgramId != nil {
 				p.buf.WriteString("PROGRAM-ID=")
 				p.buf.WriteString(strconv.FormatUint(uint64(*pl.ProgramId), 10))
+				p.buf.WriteString(",")
 			}
-			p.buf.WriteString(",BANDWIDTH=")
+			p.buf.WriteString("BANDWIDTH=")
 			p.buf.WriteString(strconv.FormatUint(uint64(pl.Bandwidth), 10))
 			if pl.AverageBandwidth != 0 {
 				p.buf.WriteString(",AVERAGE-BANDWIDTH=")
