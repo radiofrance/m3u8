@@ -805,9 +805,10 @@ func TestNewMasterPlaylistWithAlternatives(t *testing.T) {
 // Create new master playlist supporting CLOSED-CAPTIONS=NONE
 func TestNewMasterPlaylistWithClosedCaptionEqNone(t *testing.T) {
 	m := NewMasterPlaylist()
+	var programID uint32 = 1
 
 	vp := &VariantParams{
-		ProgramId:  0,
+		ProgramId:  &programID,
 		Bandwidth:  8000,
 		Codecs:     "avc1",
 		Resolution: "1280x720",
@@ -849,7 +850,8 @@ func TestNewMasterPlaylistWithParams(t *testing.T) {
 			t.Errorf("Add segment #%d to a media playlist failed: %s", i, e)
 		}
 	}
-	m.Append("chunklist1.m3u8", p, VariantParams{ProgramId: 123, Bandwidth: 1500000, Resolution: "576x480"})
+	var programID uint32 = 123
+	m.Append("chunklist1.m3u8", p, VariantParams{ProgramId: &programID, Bandwidth: 1500000, Resolution: "576x480"})
 }
 
 // Create new master playlist
@@ -867,7 +869,8 @@ func TestEncodeMasterPlaylistWithExistingQuery(t *testing.T) {
 			t.Errorf("Add segment #%d to a media playlist failed: %s", i, e)
 		}
 	}
-	m.Append("chunklist1.m3u8?k1=v1&k2=v2", p, VariantParams{ProgramId: 123, Bandwidth: 1500000, Resolution: "576x480"})
+	var programID uint32 = 123
+	m.Append("chunklist1.m3u8?k1=v1&k2=v2", p, VariantParams{ProgramId: &programID, Bandwidth: 1500000, Resolution: "576x480"})
 	m.Args = "k3=v3"
 	if !strings.Contains(m.String(), `chunklist1.m3u8?k1=v1&k2=v2&k3=v3`) {
 		t.Errorf("Encode master with existing args failed")
@@ -889,8 +892,10 @@ func TestEncodeMasterPlaylist(t *testing.T) {
 			t.Errorf("Add segment #%d to a media playlist failed: %s", i, e)
 		}
 	}
-	m.Append("chunklist1.m3u8", p, VariantParams{ProgramId: 123, Bandwidth: 1500000, Resolution: "576x480"})
-	m.Append("chunklist2.m3u8", p, VariantParams{ProgramId: 123, Bandwidth: 1500000, Resolution: "576x480"})
+
+	var programId uint32 = 123
+	m.Append("chunklist1.m3u8", p, VariantParams{ProgramId: &programId, Bandwidth: 1500000, Resolution: "576x480"})
+	m.Append("chunklist2.m3u8", p, VariantParams{ProgramId: &programId, Bandwidth: 1500000, Resolution: "576x480"})
 }
 
 // Create new master playlist with Name tag in EXT-X-STREAM-INF
@@ -906,7 +911,8 @@ func TestEncodeMasterPlaylistWithStreamInfName(t *testing.T) {
 			t.Errorf("Add segment #%d to a media playlist failed: %s", i, e)
 		}
 	}
-	m.Append("chunklist1.m3u8", p, VariantParams{ProgramId: 123, Bandwidth: 3000000, Resolution: "1152x960", Name: "HD 960p"})
+	var programId uint32 = 123
+	m.Append("chunklist1.m3u8", p, VariantParams{ProgramId: &programId, Bandwidth: 3000000, Resolution: "1152x960", Name: "HD 960p"})
 
 	if m.Variants[0].Name != "HD 960p" {
 		t.Fatalf("Create master with Name in EXT-X-STREAM-INF failed")
@@ -1019,8 +1025,9 @@ func ExampleMasterPlaylist_String() {
 	for i := 0; i < 5; i++ {
 		p.Append(fmt.Sprintf("test%d.ts", i), 5.0, "")
 	}
-	m.Append("chunklist1.m3u8", p, VariantParams{ProgramId: 123, Bandwidth: 1500000, AverageBandwidth: 1500000, Resolution: "576x480", FrameRate: 25.000})
-	m.Append("chunklist2.m3u8", p, VariantParams{ProgramId: 123, Bandwidth: 1500000, AverageBandwidth: 1500000, Resolution: "576x480", FrameRate: 25.000})
+	var programId uint32 = 123
+	m.Append("chunklist1.m3u8", p, VariantParams{ProgramId: &programId, Bandwidth: 1500000, AverageBandwidth: 1500000, Resolution: "576x480", FrameRate: 25.000})
+	m.Append("chunklist2.m3u8", p, VariantParams{ProgramId: &programId, Bandwidth: 1500000, AverageBandwidth: 1500000, Resolution: "576x480", FrameRate: 25.000})
 	fmt.Printf("%s", m)
 	// Output:
 	// #EXTM3U
@@ -1087,6 +1094,122 @@ func ExampleMediaPlaylist_Segments_scte35_67_2014() {
 	// #EXT-SCTE35:CUE="/DAIAAAAAAAAAAAQAAZ/I0VniQAQAgBDVUVJQAAAAH+cAAAAAA==",ID="123",TIME=123.12
 	// #EXTINF:10.000,
 	// media2.ts
+}
+
+// Create new media playlist,
+// Set date range.
+func TestNewMasterPlaylistSetDateRange(t *testing.T) {
+	segments := []*MediaSegment{{URI: "test.ts", Duration: 5.0}}
+	now := time.Now()
+
+	tests := []struct {
+		Name            string
+		DateRange       *DateRange
+		ExpectedResults []string
+		ExpectedError   string
+		Segments        []*MediaSegment
+	}{
+		{
+			Name:          "Set date range to empty playlist",
+			ExpectedError: "playlist is empty",
+		},
+		{
+			Name: "Set date range without StartDate",
+			DateRange: &DateRange{
+				ID: "date range 1",
+			},
+			ExpectedError: "ID and StartDate attributes is required",
+			Segments:      segments,
+		},
+		{
+			Name: "Set date range without ID",
+			DateRange: &DateRange{
+				StartDate: now,
+			},
+			ExpectedError: "ID and StartDate attributes is required",
+			Segments:      segments,
+		},
+		{
+			Name: "Set date range with one custom id attr",
+			DateRange: &DateRange{
+				ID:               "id1",
+				StartDate:        now,
+				Duration:         10,
+				ClientAttributes: ClientAttributes{"X-COM-EXAMPLE-AD-ID": "XYZ123"},
+			},
+			Segments: segments,
+			ExpectedResults: []string{
+				`#EXT-X-DATERANGE`,
+				`ID="id1"`,
+				fmt.Sprintf(`START-DATE="%s"`, now.Format(DATERANGE_DATETIME)),
+				`X-COM-EXAMPLE-AD-ID="XYZ123"`,
+			},
+		},
+		{
+			Name: "Set date range with all params",
+			DateRange: &DateRange{
+				ID:               "id1",
+				StartDate:        now,
+				Duration:         10,
+				PlannedDuration:  5,
+				Class:            "class",
+				EndDate:          now,
+				ClientAttributes: ClientAttributes{"X-COM-EXAMPLE-AD-ID": "XYZ123"},
+				SCTE35In:         "test",
+				SCTE35Out:        "test",
+				SCTE35Command:    "test",
+				EndOnNext:        "YES",
+			},
+			Segments: segments,
+			ExpectedResults: []string{
+				`#EXT-X-DATERANGE`,
+				`ID="id1"`,
+				fmt.Sprintf(`START-DATE="%s"`, now.Format(DATERANGE_DATETIME)),
+				fmt.Sprintf(`END-DATE="%s"`, now.Format(DATERANGE_DATETIME)),
+				`X-COM-EXAMPLE-AD-ID="XYZ123"`,
+				`SCTE35-IN=test`,
+				`SCTE35-OUT=test`,
+				`SCTE35-CMD=test`,
+				`CLASS="class"`,
+				`DURATION=10.000`,
+				`PLANNED-DURATION=5.000`,
+				`END-ON-NEXT=YES`,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			p, e := NewMediaPlaylist(1, 1)
+			if e != nil {
+				t.Fatalf("Create media playlist failed: %s", e)
+			}
+
+			for _, s := range test.Segments {
+				if e = p.AppendSegment(s); e != nil {
+					t.Errorf("Add 1st segment to a media playlist failed: %s", e)
+				}
+			}
+
+			if e := p.SetDateRange(test.DateRange); e != nil {
+				if test.ExpectedError != "" {
+					if !strings.Contains(e.Error(), test.ExpectedError) {
+						t.Errorf("Test '%s'  did not contain: %q, playlist: %v",
+							test.Name, test.ExpectedError, p.String())
+					}
+				} else {
+					t.Errorf("SetDateRange to a media playlist failed: %s", e)
+				}
+			}
+
+			actualResult := p.String()
+			for _, expected := range test.ExpectedResults {
+				if !strings.Contains(actualResult, expected) {
+					t.Errorf("Test '%s' did not contain: %q, playlist: %v", test.Name, expected, actualResult)
+				}
+			}
+		})
+	}
 }
 
 /****************

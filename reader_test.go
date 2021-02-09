@@ -168,10 +168,11 @@ func TestDecodeMasterPlaylistWithIFrameStreamInf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	var programID uint32 = 1
 	expected := map[int]*Variant{
-		86000:  {URI: "low/iframe.m3u8", VariantParams: VariantParams{Bandwidth: 86000, ProgramId: 1, Codecs: "c1", Resolution: "1x1", Video: "1", Iframe: true}},
-		150000: {URI: "mid/iframe.m3u8", VariantParams: VariantParams{Bandwidth: 150000, ProgramId: 1, Codecs: "c2", Resolution: "2x2", Video: "2", Iframe: true}},
-		550000: {URI: "hi/iframe.m3u8", VariantParams: VariantParams{Bandwidth: 550000, ProgramId: 1, Codecs: "c2", Resolution: "2x2", Video: "2", Iframe: true}},
+		86000:  {URI: "low/iframe.m3u8", VariantParams: VariantParams{Bandwidth: 86000, ProgramId: &programID, Codecs: "c1", Resolution: "1x1", Video: "1", Iframe: true}},
+		150000: {URI: "mid/iframe.m3u8", VariantParams: VariantParams{Bandwidth: 150000, ProgramId: &programID, Codecs: "c2", Resolution: "2x2", Video: "2", Iframe: true}},
+		550000: {URI: "hi/iframe.m3u8", VariantParams: VariantParams{Bandwidth: 550000, ProgramId: &programID, Codecs: "c2", Resolution: "2x2", Video: "2", Iframe: true}},
 	}
 	for _, variant := range p.Variants {
 		for k, expect := range expected {
@@ -976,6 +977,32 @@ func TestDecodeMediaPlaylistStartTime(t *testing.T) {
 	startTime := float64(8.0)
 	if *pp.StartTime != startTime {
 		t.Errorf("Media segment StartTime != 8: %f", *pp.StartTime)
+	}
+}
+
+func TestDecodeMediaPlaylistWithDateRange(t *testing.T) {
+	f, err := os.Open("sample-playlists/media-playlist-with-date-range.m3u8")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, listType, err := DecodeFrom(bufio.NewReader(f), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pp := p.(*MediaPlaylist)
+	CheckType(t, pp)
+	if listType != MEDIA {
+		t.Error("Sample not recognized as media playlist.")
+	}
+
+	for _, s := range pp.Segments[0:pp.Count()] {
+		if s.DateRange.ID == "" {
+			t.Errorf("Media segment date range ID cannot be empty")
+		}
+
+		if s.DateRange.StartDate.IsZero() {
+			t.Errorf("Media segment date range Start Date cannot be empty")
+		}
 	}
 }
 
