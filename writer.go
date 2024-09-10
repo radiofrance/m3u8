@@ -640,9 +640,6 @@ func (p *MediaPlaylist) Encode() *bytes.Buffer {
 			}
 			p.buf.WriteRune('\n')
 		}
-		if seg.Discontinuity {
-			p.buf.WriteString("#EXT-X-DISCONTINUITY\n")
-		}
 		// ignore segment Map if default playlist Map is present
 		if p.Map == nil && seg.Map != nil {
 			p.buf.WriteString("#EXT-X-MAP:")
@@ -677,8 +674,12 @@ func (p *MediaPlaylist) Encode() *bytes.Buffer {
 
 		// Fix: radiofrance
 		// for LL-HLS compatibility with various players, we need to move the HLS
-		// tag EXT-X-PROGRAM-DATE-TIME after the EXT-X-SKIP which is defined as a
-		// custom tag.
+		// tag EXT-X-SKIP, defined above as a Custom segment tag, before all segment
+		// related tags like EXT-X-PROGRAM-DATE-TIME and EXT-X-DISCONTINUITY
+		if seg.Discontinuity {
+			p.buf.WriteString("#EXT-X-DISCONTINUITY\n")
+		}
+
 		if !seg.ProgramDateTime.IsZero() {
 			p.buf.WriteString("#EXT-X-PROGRAM-DATE-TIME:")
 			p.buf.WriteString(seg.ProgramDateTime.Format(DATETIME))
